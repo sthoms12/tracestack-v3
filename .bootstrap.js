@@ -83,7 +83,8 @@ function runSetupCommands() {
     "bun install react-flow",
     "bun remove react-flow",
     "bun add @xyflow/react",
-    "rm -rf src/App.css"
+    "rm -rf src/App.css",
+    "bun add @vitejs/plugin-react-swc"
 ];
     
     if (commands.length === 0) {
