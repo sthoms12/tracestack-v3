@@ -133,6 +133,13 @@ export class SessionEntity extends IndexedEntity<Session> {
       updatedAt: new Date().toISOString(),
     }));
   }
+  async update(updates: Partial<Session>): Promise<Session> {
+    return this.mutate(s => ({
+      ...s,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    }));
+  }
   async duplicate(): Promise<Session> {
     const originalState = await this.getState();
     const now = new Date().toISOString();
