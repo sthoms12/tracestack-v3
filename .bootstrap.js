@@ -82,7 +82,8 @@ function runSetupCommands() {
     "rm -rf src/pages/DemoPage.tsx",
     "bun install react-flow",
     "bun remove react-flow",
-    "bun add @xyflow/react"
+    "bun add @xyflow/react",
+    "rm -rf src/App.css"
 ];
     
     if (commands.length === 0) {
