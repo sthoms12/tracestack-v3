@@ -20,7 +20,7 @@ export const getTokenPayload = async (c: Context): Promise<TokenPayload | null> 
       return null
     }
     const token = authHeader.substring(7)
-    return (await verify(token, JWT_SECRET)) as TokenPayload
+    return (await verify(token, JWT_SECRET)) as unknown as TokenPayload
   } catch (e) {
     return null
   }
