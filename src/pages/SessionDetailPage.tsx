@@ -20,7 +20,7 @@ const statusIcons: Record<SessionStatus, string> = {
   [SessionStatus.Active]: "🔵",
   [SessionStatus.Resolved]: "🟢",
   [SessionStatus.Blocked]: "🟡",
-  [SessionStatus.Archived]: "⚪���",
+  [SessionStatus.Archived]: "⚪️",
 };
 const priorityColors: Record<PriorityLevel, string> = {
   [PriorityLevel.Low]: "text-green-500",
