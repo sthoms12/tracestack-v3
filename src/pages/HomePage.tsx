@@ -10,20 +10,39 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import CreateSessionDialog from "@/components/sessions/CreateSessionDialog";
 import { useState } from "react";
+import { motion } from "framer-motion";
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+  },
+};
 const StatCard = ({ title, value, Icon, isLoading }: { title: string; value: number; Icon: LucideIcon; isLoading: boolean }) => (
-  <Card>
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium">{title}</CardTitle>
-      <Icon className="h-4 w-4 text-muted-foreground" />
-    </CardHeader>
-    <CardContent>
-      {isLoading ? (
-        <Skeleton className="h-8 w-1/2" />
-      ) : (
-        <div className="text-2xl font-bold">{value}</div>
-      )}
-    </CardContent>
-  </Card>
+  <motion.div variants={itemVariants}>
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <Icon className="h-4 w-4 text-muted-foreground" />
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <Skeleton className="h-8 w-1/2" />
+        ) : (
+          <div className="text-2xl font-bold">{value}</div>
+        )}
+      </CardContent>
+    </Card>
+  </motion.div>
 );
 export function HomePage() {
   const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
@@ -46,12 +65,17 @@ export function HomePage() {
               <Button onClick={() => setCreateDialogOpen(true)}>New Session</Button>
             </CreateSessionDialog>
           </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+          <motion.div
+            className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
             <StatCard title="Active" value={stats?.active ?? 0} Icon={PlayCircle} isLoading={isLoadingStats} />
             <StatCard title="Resolved" value={stats?.resolved ?? 0} Icon={CheckCircle} isLoading={isLoadingStats} />
             <StatCard title="Blocked" value={stats?.blocked ?? 0} Icon={Ban} isLoading={isLoadingStats} />
             <StatCard title="Archived" value={stats?.archived ?? 0} Icon={Archive} isLoading={isLoadingStats} />
-          </div>
+          </motion.div>
           <div className="space-y-8">
             <div>
               <div className="flex justify-between items-center mb-4">
@@ -65,11 +89,16 @@ export function HomePage() {
                   {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-48 rounded-lg" />)}
                 </div>
               ) : recentSessions.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <motion.div
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                  variants={containerVariants}
+                  initial="hidden"
+                  animate="visible"
+                >
                   {recentSessions.map(session => (
                     <SessionCard key={session.id} session={session} />
                   ))}
-                </div>
+                </motion.div>
               ) : (
                 <div className="text-center py-12 border-2 border-dashed rounded-lg">
                   <p className="text-muted-foreground">No recent sessions. Start a new one!</p>
