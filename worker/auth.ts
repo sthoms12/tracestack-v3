@@ -13,15 +13,3 @@ export const authMiddleware = jwt({
 export const signToken = async (payload: { id: string; email: string }) => {
   return await sign(payload, JWT_SECRET)
 }
-export const getTokenPayload = async (c: Context): Promise<TokenPayload | null> => {
-  try {
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null
-    }
-    const token = authHeader.substring(7)
-    return (await verify(token, JWT_SECRET)) as unknown as TokenPayload
-  } catch (e) {
-    return null
-  }
-}
