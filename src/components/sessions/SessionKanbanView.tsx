@@ -1,9 +1,9 @@
 import { Session, SessionEntry, KanbanState, SessionEntryType } from "@shared/types";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { DndContext, closestCenter, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Lightbulb, Workflow, Search, StickyNote, GripVertical } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
@@ -56,6 +56,9 @@ function KanbanColumn({ title, entries, state }: { title: string; entries: Sessi
 export default function SessionKanbanView({ session }: { session: Session }) {
   const queryClient = useQueryClient();
   const [entries, setEntries] = useState(session.entries);
+  useEffect(() => {
+    setEntries(session.entries);
+  }, [session.entries]);
   const columns = useMemo(() => ({
     [KanbanState.Todo]: entries.filter(e => e.kanbanState === KanbanState.Todo),
     [KanbanState.InProgress]: entries.filter(e => e.kanbanState === KanbanState.InProgress),
