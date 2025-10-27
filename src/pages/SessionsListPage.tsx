@@ -46,6 +46,21 @@ export default function SessionsListPage() {
       toast.error(`Failed to duplicate session: ${error.message}`);
     },
   });
+
+  const archiveSessionMutation = useMutation({
+    mutationFn: (sessionId: string) => api<Session>(`/api/sessions/${sessionId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: SessionStatus.Archived }),
+      headers: { 'Content-Type': 'application/json' },
+    }),
+    onSuccess: () => {
+      toast.success("Session archived successfully!");
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+    },
+    onError: (error) => {
+      toast.error(`Failed to archive session: ${error.message}`);
+    },
+  });
   const filteredSessions = useMemo(() => {
     if (!sessions) return [];
     return sessions.filter((session) =>
@@ -131,7 +146,13 @@ export default function SessionsListPage() {
                                 Duplicate
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-destructive">Archive</DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={() => archiveSessionMutation.mutate(session.id)}
+                                disabled={archiveSessionMutation.isPending}
+                              >
+                                Archive
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
