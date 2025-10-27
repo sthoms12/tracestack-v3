@@ -77,14 +77,7 @@ function updateWranglerJsonc() {
 }
 
 function runSetupCommands() {
-    const commands = [
-    "bun install @hono/zod-validator",
-    "bun install react-flow",
-    "bun remove react-flow",
-    "bun add @xyflow/react",
-    "bun add @vitejs/plugin-react-swc",
-    "bun add hono"
-];
+    const commands = [];
     
     if (commands.length === 0) {
         console.log('⊘ No setup commands to run');
