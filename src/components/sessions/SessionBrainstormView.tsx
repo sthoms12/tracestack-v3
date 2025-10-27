@@ -13,7 +13,7 @@ const initialNodes: Node[] = [
 ];
 export default function SessionBrainstormView({ session }: { session: Session }) {
   const brainstormData = session.brainstormData as BrainstormData | undefined;
-  const [nodes, setNodes, onNodesChange] = useNodesState(brainstormData?.nodes || initialNodes);
+  const [nodes, setNodes, onNodesChange] = useNodesState(brainstormData?.nodes as Node[] || initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(brainstormData?.edges || []);
   const queryClient = useQueryClient();
   const onConnect = useCallback((params: Connection | Edge) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
@@ -36,12 +36,6 @@ export default function SessionBrainstormView({ session }: { session: Session })
     }
   }, [nodes, edges, brainstormData, updateBrainstormMutation]);
   useDebounce(handleSave, 2000, [nodes, edges]);
-  useEffect(() => {
-    if (brainstormData) {
-      setNodes(brainstormData.nodes || initialNodes);
-      setEdges(brainstormData.edges || []);
-    }
-  }, [brainstormData, setNodes, setEdges]);
   const addNode = () => {
     const newNodeId = (nodes.length + 1).toString();
     const newNode = {
