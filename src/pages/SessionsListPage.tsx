@@ -13,31 +13,31 @@ import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from "@/components/ui/skeleton";
-import CreateSessionDialog from "@/components/sessions/CreateSessionDialog";
+import CreateSessionDialog from "@/components/sessions/CreateSessionDialog";function cn<T = unknown>(...args: unknown[]): T | null {console.warn('cn is not implemented', args);return null as T | null;}function cn<T = unknown>(...args: unknown[]): T | null {console.warn('cn is not implemented', args);return null as T | null;}
 const statusColors: Record<SessionStatus, string> = {
   [SessionStatus.Active]: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
   [SessionStatus.Resolved]: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
   [SessionStatus.Blocked]: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  [SessionStatus.Archived]: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
+  [SessionStatus.Archived]: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
 };
 const priorityColors: Record<PriorityLevel, string> = {
   [PriorityLevel.Low]: "border-green-500",
   [PriorityLevel.Medium]: "border-blue-500",
   [PriorityLevel.High]: "border-yellow-500",
-  [PriorityLevel.Critical]: "border-red-500",
+  [PriorityLevel.Critical]: "border-red-500"
 };
 export default function SessionsListPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
   const { data: sessions, isLoading } = useQuery<Session[]>({
     queryKey: ['sessions'],
-    queryFn: () => api('/api/sessions'),
+    queryFn: () => api('/api/sessions')
   });
   const filteredSessions = useMemo(() => {
     if (!sessions) return [];
-    return sessions.filter(session =>
-      session.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      session.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+    return sessions.filter((session) =>
+    session.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    session.tags.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [sessions, searchTerm]);
   return (
@@ -56,8 +56,8 @@ export default function SessionsListPage() {
                     placeholder="Filter by title or tag..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full sm:w-64"
-                  />
+                    className="w-full sm:w-64" />
+
                   <CreateSessionDialog open={isCreateDialogOpen} onOpenChange={setCreateDialogOpen}>
                     <Button onClick={() => setCreateDialogOpen(true)}>
                       <PlusCircle className="mr-2 h-4 w-4" /> New
@@ -78,19 +78,19 @@ export default function SessionsListPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isLoading ? (
-                    [...Array(5)].map((_, i) => (
-                      <TableRow key={i}>
+                  {isLoading ?
+                  [...Array(5)].map((_, i) =>
+                  <TableRow key={i}>
                         <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                         <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                       </TableRow>
-                    ))
-                  ) : filteredSessions.length > 0 ? (
-                    filteredSessions.map((session) => (
-                      <TableRow key={session.id}>
+                  ) :
+                  filteredSessions.length > 0 ?
+                  filteredSessions.map((session) =>
+                  <TableRow key={session.id}>
                         <TableCell className="font-medium">
                           <Link to={`/app/sessions/${session.id}`} className="hover:underline">
                             {session.title}
@@ -121,20 +121,20 @@ export default function SessionsListPage() {
                           </DropdownMenu>
                         </TableCell>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
+                  ) :
+
+                  <TableRow>
                       <TableCell colSpan={5} className="h-24 text-center">
                         No sessions found.
                       </TableCell>
                     </TableRow>
-                  )}
+                  }
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
         </div>
       </div>
-    </AppLayout>
-  );
+    </AppLayout>);
+
 }
