@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, List, BarChart2, Search, Settings, LifeBuoy, Sparkles } from "lucide-react";
+import { Home, List, BarChart2, Search, Sparkles } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -9,7 +9,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
-import { cn } from "@/lib/utils";
+import UserProfile from "./auth/UserProfile";
 const navItems = [
   { href: "/app/dashboard", label: "Dashboard", icon: Home },
   { href: "/app/sessions", label: "All Sessions", icon: List },
@@ -42,18 +42,7 @@ export function AppSidebar(): JSX.Element {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <NavLink to="/app/support"><LifeBuoy className="h-5 w-5" /><span>Support</span></NavLink>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <NavLink to="/app/settings"><Settings className="h-5 w-5" /><span>Settings</span></NavLink>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <UserProfile />
       </SidebarFooter>
     </Sidebar>
   );

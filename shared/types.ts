@@ -3,6 +3,9 @@ export interface ApiResponse<T = unknown> {
   data?: T;
   error?: string;
 }
+export interface AuthUser {
+  email: string;
+}
 export enum SessionStatus {
   Active = 'active',
   Resolved = 'resolved',
@@ -33,25 +36,21 @@ export interface SessionEntry {
   createdAt: string; // ISO 8601 string
   kanbanState?: KanbanState;
 }
-
 export interface BrainstormNode {
   id: string;
   position: { x: number; y: number };
   data: { label: string };
   type?: string;
 }
-
 export interface BrainstormEdge {
   id: string;
   source: string;
   target: string;
 }
-
 export interface BrainstormData {
   nodes: BrainstormNode[];
   edges: BrainstormEdge[];
 }
-
 export interface Session {
   id: string;
   title: string;

@@ -4,7 +4,20 @@ import { zValidator } from '@hono/zod-validator';
 import type { Env } from './core-utils';
 import { SessionEntity } from "./entities";
 import { ok, bad, notFound } from './core-utils';
-import { SessionStatus, PriorityLevel, SessionEntryType, type Session, KanbanState } from "@shared/types";
+import { SessionStatus, PriorityLevel, SessionEntryType, type Session, KanbanState, AuthUser } from "@shared/types";
+// Helper to decode JWT payload. NOTE: This does NOT verify the signature.
+// Cloudflare Access has already verified it before the request reaches the worker.
+function decodeJwtPayload(token: string): { email?: string } | null {
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) return null;
+    const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+    return JSON.parse(decoded);
+  } catch (e) {
+    console.error('Failed to decode JWT payload:', e);
+    return null;
+  }
+}
 const createSessionSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
   description: z.string().optional(),
@@ -28,7 +41,6 @@ const updateBrainstormSchema = z.object({
     edges: z.array(z.any()),
   }).nullable(),
 });
-
 const updateSessionSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').optional(),
   description: z.string().optional(),
@@ -37,8 +49,20 @@ const updateSessionSchema = z.object({
   tags: z.array(z.string()).optional(),
   status: z.nativeEnum(SessionStatus).optional(),
 });
-
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
+  // Authentication endpoint
+  app.get('/api/auth/me', (c) => {
+    const jwt = c.req.header('Cf-Access-Jwt-Assertion');
+    if (jwt) {
+      const payload = decodeJwtPayload(jwt);
+      if (payload?.email) {
+        return ok(c, { email: payload.email } as AuthUser);
+      }
+    }
+    // For local development, return a mock user when the header is not present.
+    // This condition can be tightened for production builds if needed.
+    return ok(c, { email: 'dev.user@tracestack.local' } as AuthUser);
+  });
   // Ensure seed data is present on first load
   app.use('/api/*', async (c, next) => {
     await SessionEntity.ensureSeed(c.env);
@@ -149,17 +173,14 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const duplicatedSession = await session.duplicate();
     return ok(c, duplicatedSession);
   });
-
   // PATCH update a session's properties
   app.patch('/api/sessions/:id', zValidator('json', updateSessionSchema), async (c) => {
     const { id } = c.req.param();
     const body = c.req.valid('json');
-
     const session = new SessionEntity(c.env, id);
     if (!(await session.exists())) {
       return notFound(c, 'Session not found');
     }
-
     const updatedSession = await session.update(body);
     return ok(c, updatedSession);
   });

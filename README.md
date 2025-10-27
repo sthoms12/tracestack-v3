@@ -41,7 +41,35 @@ To start the development server for both the frontend and the worker, run:
 ```sh
 bun dev
 ```
-This will start the Vite development server for the React application and a local Wrangler server for the Hono backend. The application will be available at `http://localhost:3000`.
+This will start the Vite development server for the React application and a local Wrangler server for the Hono backend. The application will be available at `http://localhost:3000`. The authentication flow is mocked in local development, using the email `dev.user@tracestack.local`.
+## Authentication with Cloudflare Access
+This application is designed to be protected by [Cloudflare Access](https://www.cloudflare.com/products/zero-trust/access/), which provides secure authentication for your applications without requiring you to manage user credentials.
+### Setup Guide
+Follow these steps to protect your deployed application:
+1.  **Navigate to the Zero Trust Dashboard:**
+    -   Log in to your Cloudflare account.
+    -   From the main dashboard, select **Zero Trust** on the left-hand sidebar.
+2.  **Add a Self-Hosted Application:**
+    -   In the Zero Trust dashboard, go to **Access -> Applications**.
+    -   Click **Add an application**.
+    -   Select the **Self-hosted** option.
+3.  **Configure the Application:**
+    -   **Application name:** Choose a descriptive name (e.g., "TraceStack App").
+    -   **Session Duration:** Set how long a user's session should last (e.g., "24 hours").
+    -   **Application domain:** This is the most important step.
+        -   **Domain:** Select the domain of your deployed worker (e.g., `your-worker-subdomain.workers.dev`).
+        -   **Path:** Enter `app`. This will ensure that only routes under `/app/*` are protected.
+    -   Scroll down to **Identity providers** and select the providers you want to allow (e.g., "Google", "GitHub", or "One-time PIN").
+    -   Click **Next**.
+4.  **Create an Access Policy:**
+    -   **Policy name:** Give your policy a name (e.g., "Allow My Team").
+    -   **Action:** Set to **Allow**.
+    -   **Configure rules:** Create a rule to define who can access the application. For personal use, you can create a rule with the "Emails" selector and add your own email address.
+    -   Click **Next**.
+5.  **Finalize Setup:**
+    -   Review your configuration.
+    -   Click **Add application**.
+Your application is now protected! When a user navigates to `https://your-worker-subdomain.workers.dev/app`, they will be prompted to log in with the identity provider you configured. Once authenticated, Cloudflare Access will securely forward their identity (email) to the application in the `Cf-Access-Jwt-Assertion` header.
 ## Deployment to Cloudflare Free Tier
 This project is designed for easy deployment to Cloudflare's serverless platform.
 ### 1. Prerequisites
@@ -54,47 +82,23 @@ Log in to your Cloudflare account. This will open a browser window for you to au
 ```sh
 wrangler login
 ```
-### 3. Project Configuration (`wrangler.jsonc`)
-The `wrangler.jsonc` file is pre-configured for deployment. It tells Cloudflare how to build and deploy your application. The most important part for data persistence is the `durable_objects` configuration:
-```jsonc
-"durable_objects": {
-  "bindings": [
-    {
-      "name": "GlobalDurableObject",
-      "class_name": "GlobalDurableObject"
-    }
-  ]
-}
-```
-This configuration ensures that a Durable Object class named `GlobalDurableObject` is created and made available to your worker code. On the first deployment, Cloudflare automatically provisions this for you.
-### 4. Build the Project
+### 3. Build the Project
 This command compiles the frontend React application and the backend worker code into a production-ready format.
 ```sh
 bun run build
 ```
-### 5. Deploy to Cloudflare
+### 4. Deploy to Cloudflare
 This command uploads your built application to the Cloudflare network.
 ```sh
 bun run deploy
 ```
 Wrangler will output the URL of your deployed application (e.g., `https://tracestack-....workers.dev`).
-### 6. Post-Deployment Verification
--   **Access the Application**: Open the URL provided by Wrangler in your browser. You should see the TraceStack landing page.
--   **Verify Worker and Durable Object**: Navigate into the application and try creating a new session. If the session is created and persists after a page refresh, your Worker and Durable Object are working correctly.
-### Important Notes
--   **Durable Objects on the Free Tier**: The Cloudflare free tier includes a generous allowance for Durable Objects, which is more than sufficient for personal use and small projects.
--   **Automatic Provisioning**: You do not need to manually create the Durable Object in the Cloudflare dashboard; Wrangler handles it for you on the first deploy based on the `wrangler.jsonc` configuration.
+### 5. Post-Deployment
+After deploying, follow the **Authentication with Cloudflare Access** guide above to secure your application.
 ## Project Structure
 The project is organized into three main directories:
 -   `src/`: Contains the frontend React application source code.
-    -   `pages/`: Top-level page components.
-    -   `components/`: Reusable UI components.
-    -   `lib/`: Utility functions and API client.
-    -   `hooks/`: Custom React hooks.
 -   `worker/`: Contains the backend Hono application that runs on Cloudflare Workers.
-    -   `index.ts`: The entry point for the worker.
-    -   `user-routes.ts`: Where API routes are defined.
-    -   `entities.ts`: Data models and logic for interacting with Durable Objects.
 -   `shared/`: Contains TypeScript types that are shared between the frontend and backend.
 ## License
 This project is licensed under the MIT License.

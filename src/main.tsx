@@ -21,6 +21,7 @@ import SearchPage from './pages/SearchPage';
 import SettingsPage from './pages/SettingsPage';
 import SupportPage from './pages/SupportPage';
 import AiAssistantPage from './pages/AiAssistantPage';
+import ProtectedLayout from './components/layout/ProtectedLayout';
 import { Toaster } from '@/components/ui/sonner';
 const queryClient = new QueryClient();
 const router = createBrowserRouter([
@@ -31,47 +32,46 @@ const router = createBrowserRouter([
   },
   {
     path: "/app",
-    element: <Navigate to="/app/dashboard" replace />,
-  },
-  {
-    path: "/app/dashboard",
-    element: <HomePage />,
+    element: <ProtectedLayout />,
     errorElement: <RouteErrorBoundary />,
-  },
-  {
-    path: "/app/sessions",
-    element: <SessionsListPage />,
-    errorElement: <RouteErrorBoundary />,
-  },
-  {
-    path: "/app/sessions/:id",
-    element: <SessionDetailPage />,
-    errorElement: <RouteErrorBoundary />,
-  },
-  {
-    path: "/app/analytics",
-    element: <AnalyticsPage />,
-    errorElement: <RouteErrorBoundary />,
-  },
-  {
-    path: "/app/search",
-    element: <SearchPage />,
-    errorElement: <RouteErrorBoundary />,
-  },
-  {
-    path: "/app/ai-assistant",
-    element: <AiAssistantPage />,
-    errorElement: <RouteErrorBoundary />,
-  },
-  {
-    path: "/app/settings",
-    element: <SettingsPage />,
-    errorElement: <RouteErrorBoundary />,
-  },
-  {
-    path: "/app/support",
-    element: <SupportPage />,
-    errorElement: <RouteErrorBoundary />,
+    children: [
+      {
+        index: true,
+        element: <Navigate to="/app/dashboard" replace />,
+      },
+      {
+        path: "dashboard",
+        element: <HomePage />,
+      },
+      {
+        path: "sessions",
+        element: <SessionsListPage />,
+      },
+      {
+        path: "sessions/:id",
+        element: <SessionDetailPage />,
+      },
+      {
+        path: "analytics",
+        element: <AnalyticsPage />,
+      },
+      {
+        path: "search",
+        element: <SearchPage />,
+      },
+      {
+        path: "ai-assistant",
+        element: <AiAssistantPage />,
+      },
+      {
+        path: "settings",
+        element: <SettingsPage />,
+      },
+      {
+        path: "support",
+        element: <SupportPage />,
+      },
+    ]
   },
 ]);
 // Do not touch this code
