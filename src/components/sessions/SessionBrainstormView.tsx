@@ -1,6 +1,7 @@
 import { Session } from "@shared/types";
 import { useState, useCallback, useEffect } from 'react';
 import { ReactFlow, MiniMap, Controls, Background, useNodesState, useEdgesState, addEdge, Connection, Edge, Node } from '@xyflow/react';
+import type { BrainstormData } from "@shared/types";
 import '@xyflow/react/dist/style.css';
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
@@ -11,8 +12,9 @@ const initialNodes: Node[] = [
   { id: '1', position: { x: 250, y: 5 }, data: { label: 'Problem Statement' } },
 ];
 export default function SessionBrainstormView({ session }: { session: Session }) {
-  const [nodes, setNodes, onNodesChange] = useNodesState(session.brainstormData?.nodes || initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(session.brainstormData?.edges || []);
+  const brainstormData = session.brainstormData as BrainstormData | undefined;
+  const [nodes, setNodes, onNodesChange] = useNodesState(brainstormData?.nodes || initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(brainstormData?.edges || []);
   const queryClient = useQueryClient();
   const onConnect = useCallback((params: Connection | Edge) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
   const updateBrainstormMutation = useMutation({
@@ -29,17 +31,17 @@ export default function SessionBrainstormView({ session }: { session: Session })
     },
   });
   const handleSave = useCallback(() => {
-    if (JSON.stringify({ nodes, edges }) !== JSON.stringify(session.brainstormData)) {
+    if (JSON.stringify({ nodes, edges }) !== JSON.stringify(brainstormData)) {
       updateBrainstormMutation.mutate({ nodes, edges });
     }
-  }, [nodes, edges, session.brainstormData, updateBrainstormMutation]);
+  }, [nodes, edges, brainstormData, updateBrainstormMutation]);
   useDebounce(handleSave, 2000, [nodes, edges]);
   useEffect(() => {
-    if (session.brainstormData) {
-      setNodes(session.brainstormData.nodes || initialNodes);
-      setEdges(session.brainstormData.edges || []);
+    if (brainstormData) {
+      setNodes(brainstormData.nodes || initialNodes);
+      setEdges(brainstormData.edges || []);
     }
-  }, [session.brainstormData, setNodes, setEdges]);
+  }, [brainstormData, setNodes, setEdges]);
   const addNode = () => {
     const newNodeId = (nodes.length + 1).toString();
     const newNode = {
