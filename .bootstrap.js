@@ -80,7 +80,9 @@ function runSetupCommands() {
     const commands = [
     "bun install @hono/zod-validator",
     "rm -rf src/pages/DemoPage.tsx",
-    "bun install react-flow"
+    "bun install react-flow",
+    "bun remove react-flow",
+    "bun add @xyflow/react"
 ];
     
     if (commands.length === 0) {
