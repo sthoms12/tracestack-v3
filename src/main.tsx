@@ -16,6 +16,10 @@ import { HomePage } from '@/pages/HomePage'
 import LandingPage from '@/pages/LandingPage';
 import SessionsListPage from './pages/SessionsListPage';
 import SessionDetailPage from './pages/SessionDetailPage';
+import AnalyticsPage from './pages/AnalyticsPage';
+import SearchPage from './pages/SearchPage';
+import SettingsPage from './pages/SettingsPage';
+import SupportPage from './pages/SupportPage';
 import { Toaster } from '@/components/ui/sonner';
 const queryClient = new QueryClient();
 const router = createBrowserRouter([
@@ -41,6 +45,26 @@ const router = createBrowserRouter([
   {
     path: "/app/sessions/:id",
     element: <SessionDetailPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/app/analytics",
+    element: <AnalyticsPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/app/search",
+    element: <SearchPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/app/settings",
+    element: <SettingsPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/app/support",
+    element: <SupportPage />,
     errorElement: <RouteErrorBoundary />,
   },
 ]);

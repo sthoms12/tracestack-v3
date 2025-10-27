@@ -1,9 +1,9 @@
 import { Session, SessionEntry, KanbanState, SessionEntryType } from "@shared/types";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { DndContext, closestCenter, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Lightbulb, Workflow, Search, StickyNote, GripVertical } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
@@ -56,9 +56,6 @@ function KanbanColumn({ title, entries, state }: { title: string; entries: Sessi
 export default function SessionKanbanView({ session }: { session: Session }) {
   const queryClient = useQueryClient();
   const [entries, setEntries] = useState(session.entries);
-  useEffect(() => {
-    setEntries(session.entries);
-  }, [session.entries]);
   const columns = useMemo(() => ({
     [KanbanState.Todo]: entries.filter(e => e.kanbanState === KanbanState.Todo),
     [KanbanState.InProgress]: entries.filter(e => e.kanbanState === KanbanState.InProgress),
@@ -75,51 +72,28 @@ export default function SessionKanbanView({ session }: { session: Session }) {
         method: 'PUT',
         body: JSON.stringify({ kanbanState: newState }),
       }),
-    onMutate: async ({ entryId, newState }) => {
-      await queryClient.cancelQueries({ queryKey: ['session', session.id] });
-      const previousEntries = entries;
-      setEntries(prev => prev.map(e => e.id === entryId ? { ...e, kanbanState: newState } : e));
-      return { previousEntries };
-    },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['session', session.id] });
       toast.success("Entry updated");
     },
-    onError: (error, _variables, context) => {
-      if (context?.previousEntries) {
-        setEntries(context.previousEntries);
-      }
+    onError: (error) => {
       toast.error(`Failed to update entry: ${error.message}`);
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['session', session.id] });
+      // Revert optimistic update
+      setEntries(session.entries);
     },
   });
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
-
-    if (!over || active.id === over.id) {
-      return;
-    }
-
-    const activeEntry = entries.find(e => e.id === active.id);
-    if (!activeEntry) return;
-
-    const oldContainerId = activeEntry.kanbanState;
-    let newContainerId: KanbanState | undefined;
-
-    // Check if dropping directly on a column
-    if (Object.values(KanbanState).includes(over.id as KanbanState)) {
-      newContainerId = over.id as KanbanState;
-    } else {
-      // Dropping on another card, find its container
-      const overEntry = entries.find(e => e.id === over.id);
-      if (overEntry) {
-        newContainerId = overEntry.kanbanState;
+    if (over && active.id !== over.id) {
+      const activeEntry = entries.find(e => e.id === active.id);
+      if (!activeEntry) return;
+      const newContainerId = over.id as KanbanState;
+      const oldContainerId = activeEntry.kanbanState as KanbanState;
+      if (Object.values(KanbanState).includes(newContainerId) && newContainerId !== oldContainerId) {
+        // Optimistic update
+        setEntries(prev => prev.map(e => e.id === active.id ? { ...e, kanbanState: newContainerId } : e));
+        updateKanbanStateMutation.mutate({ entryId: active.id as string, newState: newContainerId });
       }
-    }
-
-    if (newContainerId && newContainerId !== oldContainerId) {
-      updateKanbanStateMutation.mutate({ entryId: active.id as string, newState: newContainerId });
     }
   }
   return (

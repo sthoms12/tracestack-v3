@@ -21,11 +21,17 @@ export enum SessionEntryType {
   Finding = 'finding',
   Note = 'note',
 }
+export enum KanbanState {
+  Todo = 'todo',
+  InProgress = 'inprogress',
+  Done = 'done',
+}
 export interface SessionEntry {
   id: string;
   type: SessionEntryType;
   content: string;
   createdAt: string; // ISO 8601 string
+  kanbanState?: KanbanState;
 }
 export interface Session {
   id: string;

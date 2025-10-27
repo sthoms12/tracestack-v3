@@ -1,6 +1,6 @@
 import { IndexedEntity } from "./core-utils";
 import type { Session, SessionEntry } from "@shared/types";
-import { SessionStatus, PriorityLevel, SessionEntryType } from "@shared/types";
+import { SessionStatus, PriorityLevel, SessionEntryType, KanbanState } from "@shared/types";
 const SEED_SESSIONS: Session[] = [
   {
     id: 'seed-1',
@@ -13,9 +13,9 @@ const SEED_SESSIONS: Session[] = [
     createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date().toISOString(),
     entries: [
-      { id: 'e1-1', type: SessionEntryType.Hypothesis, content: 'Possible issue with upstream service health checks.', createdAt: new Date(Date.now() - 1.5 * 60 * 60 * 1000).toISOString() },
-      { id: 'e1-2', type: SessionEntryType.Action, content: 'Checked CloudWatch logs for the ALB. Found spikes in unhealthy host counts.', createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() },
-      { id: 'e1-3', type: SessionEntryType.Finding, content: 'The `auth-service` is failing its health check path `/healthz`.', createdAt: new Date(Date.now() - 0.5 * 60 * 60 * 1000).toISOString() },
+      { id: 'e1-1', type: SessionEntryType.Hypothesis, content: 'Possible issue with upstream service health checks.', createdAt: new Date(Date.now() - 1.5 * 60 * 60 * 1000).toISOString(), kanbanState: KanbanState.Done },
+      { id: 'e1-2', type: SessionEntryType.Action, content: 'Checked CloudWatch logs for the ALB. Found spikes in unhealthy host counts.', createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), kanbanState: KanbanState.Done },
+      { id: 'e1-3', type: SessionEntryType.Finding, content: 'The `auth-service` is failing its health check path `/healthz`.', createdAt: new Date(Date.now() - 0.5 * 60 * 60 * 1000).toISOString(), kanbanState: KanbanState.InProgress },
     ],
   },
   {
@@ -28,7 +28,9 @@ const SEED_SESSIONS: Session[] = [
     tags: ['mobile', 'cdn', 'asset-delivery'],
     createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    entries: [],
+    entries: [
+      { id: 'e2-1', type: SessionEntryType.Hypothesis, content: 'Investigate CDN configuration for mobile user agents.', createdAt: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString(), kanbanState: KanbanState.Todo },
+    ],
   },
   {
     id: 'seed-3',
@@ -76,6 +78,7 @@ export class SessionEntity extends IndexedEntity<Session> {
       ...entry,
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
+      kanbanState: entry.kanbanState ?? KanbanState.Todo,
     };
     await this.mutate(s => ({
       ...s,
@@ -83,5 +86,20 @@ export class SessionEntity extends IndexedEntity<Session> {
       updatedAt: new Date().toISOString(),
     }));
     return newEntry;
+  }
+  async updateEntryKanbanState(entryId: string, kanbanState: KanbanState): Promise<Session> {
+    return this.mutate(s => {
+      const entryIndex = s.entries.findIndex(e => e.id === entryId);
+      if (entryIndex === -1) {
+        return s; // Entry not found, do nothing
+      }
+      const updatedEntries = [...s.entries];
+      updatedEntries[entryIndex] = { ...updatedEntries[entryIndex], kanbanState };
+      return {
+        ...s,
+        entries: updatedEntries,
+        updatedAt: new Date().toISOString(),
+      };
+    });
   }
 }

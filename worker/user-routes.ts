@@ -4,7 +4,7 @@ import { zValidator } from '@hono/zod-validator';
 import type { Env } from './core-utils';
 import { SessionEntity } from "./entities";
 import { ok, bad, notFound } from './core-utils';
-import { SessionStatus, PriorityLevel, SessionEntryType, type Session } from "@shared/types";
+import { SessionStatus, PriorityLevel, SessionEntryType, type Session, KanbanState } from "@shared/types";
 const createSessionSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
   description: z.string().optional(),
@@ -15,6 +15,9 @@ const createSessionSchema = z.object({
 const createEntrySchema = z.object({
   type: z.nativeEnum(SessionEntryType),
   content: z.string().min(1, 'Content cannot be empty'),
+});
+const updateKanbanStateSchema = z.object({
+  kanbanState: z.nativeEnum(KanbanState),
 });
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
   // Ensure seed data is present on first load
@@ -81,5 +84,16 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     }
     const newEntry = await session.addEntry(body);
     return ok(c, newEntry);
+  });
+  // PUT update an entry's kanban state
+  app.put('/api/sessions/:id/entries/:entryId/kanban', zValidator('json', updateKanbanStateSchema), async (c) => {
+    const { id, entryId } = c.req.param();
+    const { kanbanState } = c.req.valid('json');
+    const session = new SessionEntity(c.env, id);
+    if (!(await session.exists())) {
+      return notFound(c, 'Session not found');
+    }
+    const updatedSession = await session.updateEntryKanbanState(entryId, kanbanState);
+    return ok(c, updatedSession);
   });
 }

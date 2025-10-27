@@ -13,7 +13,8 @@ import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from "@/components/ui/skeleton";
-import CreateSessionDialog from "@/components/sessions/CreateSessionDialog";function cn<T = unknown>(...args: unknown[]): T | null {console.warn('cn is not implemented', args);return null as T | null;}function cn<T = unknown>(...args: unknown[]): T | null {console.warn('cn is not implemented', args);return null as T | null;}
+import CreateSessionDialog from "@/components/sessions/CreateSessionDialog";
+import { cn } from "@/lib/utils";
 const statusColors: Record<SessionStatus, string> = {
   [SessionStatus.Active]: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
   [SessionStatus.Resolved]: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
@@ -57,7 +58,6 @@ export default function SessionsListPage() {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full sm:w-64" />
-
                   <CreateSessionDialog open={isCreateDialogOpen} onOpenChange={setCreateDialogOpen}>
                     <Button onClick={() => setCreateDialogOpen(true)}>
                       <PlusCircle className="mr-2 h-4 w-4" /> New
@@ -122,7 +122,6 @@ export default function SessionsListPage() {
                         </TableCell>
                       </TableRow>
                   ) :
-
                   <TableRow>
                       <TableCell colSpan={5} className="h-24 text-center">
                         No sessions found.
@@ -136,5 +135,4 @@ export default function SessionsListPage() {
         </div>
       </div>
     </AppLayout>);
-
 }
