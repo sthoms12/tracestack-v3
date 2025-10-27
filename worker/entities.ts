@@ -18,7 +18,7 @@ const SEED_SESSIONS: Session[] = [
       { id: 'e1-3', type: SessionEntryType.Finding, content: 'The `auth-service` is failing its health check path `/healthz`.', createdAt: new Date(Date.now() - 0.5 * 60 * 60 * 1000).toISOString(), kanbanState: KanbanState.InProgress },
     ],
     rawNotes: "Initial investigation points towards the auth-service. Need to check its deployment status and recent changes.",
-    brainstormData: null,
+    brainstormData: undefined,
   },
   {
     id: 'seed-2',
@@ -34,7 +34,7 @@ const SEED_SESSIONS: Session[] = [
       { id: 'e2-1', type: SessionEntryType.Hypothesis, content: 'Investigate CDN configuration for mobile user agents.', createdAt: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString(), kanbanState: KanbanState.Todo },
     ],
     rawNotes: "",
-    brainstormData: null,
+    brainstormData: undefined,
   },
   {
     id: 'seed-3',
@@ -48,7 +48,7 @@ const SEED_SESSIONS: Session[] = [
     updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString(),
     entries: [],
     rawNotes: "",
-    brainstormData: null,
+    brainstormData: undefined,
   },
   {
     id: 'seed-4',
@@ -62,7 +62,7 @@ const SEED_SESSIONS: Session[] = [
     updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
     entries: [],
     rawNotes: "",
-    brainstormData: null,
+    brainstormData: undefined,
   },
 ];
 export class SessionEntity extends IndexedEntity<Session> {
@@ -80,7 +80,7 @@ export class SessionEntity extends IndexedEntity<Session> {
     updatedAt: new Date().toISOString(),
     entries: [],
     rawNotes: "",
-    brainstormData: null,
+    brainstormData: undefined,
   };
   static seedData = SEED_SESSIONS;
   async addEntry(entry: Omit<SessionEntry, 'id' | 'createdAt'>): Promise<SessionEntry> {
@@ -122,7 +122,14 @@ export class SessionEntity extends IndexedEntity<Session> {
   async updateBrainstormData(data: BrainstormData | null): Promise<Session> {
     return this.mutate(s => ({
       ...s,
-      brainstormData: data,
+      brainstormData: data === null ? undefined : data,
+      updatedAt: new Date().toISOString(),
+    }));
+  }
+  async updateStatus(status: SessionStatus): Promise<Session> {
+    return this.mutate(s => ({
+      ...s,
+      status,
       updatedAt: new Date().toISOString(),
     }));
   }
