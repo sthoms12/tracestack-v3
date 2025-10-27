@@ -1,75 +1,85 @@
 import { Hono } from "hono";
+import { z } from 'zod';
+import { zValidator } from '@hono/zod-validator';
 import type { Env } from './core-utils';
-import { UserEntity, ChatBoardEntity } from "./entities";
-import { ok, bad, notFound, isStr } from './core-utils';
-
+import { SessionEntity } from "./entities";
+import { ok, bad, notFound } from './core-utils';
+import { SessionStatus, PriorityLevel, SessionEntryType, type Session } from "@shared/types";
+const createSessionSchema = z.object({
+  title: z.string().min(3, 'Title must be at least 3 characters'),
+  description: z.string().optional(),
+  environment: z.string().optional(),
+  priority: z.nativeEnum(PriorityLevel).default(PriorityLevel.Medium),
+  tags: z.array(z.string()).optional(),
+});
+const createEntrySchema = z.object({
+  type: z.nativeEnum(SessionEntryType),
+  content: z.string().min(1, 'Content cannot be empty'),
+});
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
-  app.get('/api/test', (c) => c.json({ success: true, data: { name: 'CF Workers Demo' }}));
-
-  // USERS
-  app.get('/api/users', async (c) => {
-    await UserEntity.ensureSeed(c.env);
-    const cq = c.req.query('cursor');
-    const lq = c.req.query('limit');
-    const page = await UserEntity.list(c.env, cq ?? null, lq ? Math.max(1, (Number(lq) | 0)) : undefined);
-    return ok(c, page);
+  // Ensure seed data is present on first load
+  app.use('/api/*', async (c, next) => {
+    await SessionEntity.ensureSeed(c.env);
+    await next();
   });
-
-  app.post('/api/users', async (c) => {
-    const { name } = (await c.req.json()) as { name?: string };
-    if (!name?.trim()) return bad(c, 'name required');
-    return ok(c, await UserEntity.create(c.env, { id: crypto.randomUUID(), name: name.trim() }));
+  // GET all sessions
+  app.get('/api/sessions', async (c) => {
+    const { items } = await SessionEntity.list(c.env);
+    // sort by most recently updated
+    items.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.createdAt).getTime());
+    return ok(c, items);
   });
-
-  // CHATS
-  app.get('/api/chats', async (c) => {
-    await ChatBoardEntity.ensureSeed(c.env);
-    const cq = c.req.query('cursor');
-    const lq = c.req.query('limit');
-    const page = await ChatBoardEntity.list(c.env, cq ?? null, lq ? Math.max(1, (Number(lq) | 0)) : undefined);
-    return ok(c, page);
+  // POST a new session
+  app.post('/api/sessions', zValidator('json', createSessionSchema), async (c) => {
+    const body = c.req.valid('json');
+    const now = new Date().toISOString();
+    const newSession: Session = {
+      id: crypto.randomUUID(),
+      title: body.title,
+      description: body.description ?? '',
+      environment: body.environment ?? '',
+      priority: body.priority,
+      tags: body.tags ?? [],
+      status: SessionStatus.Active,
+      createdAt: now,
+      updatedAt: now,
+      entries: [],
+    };
+    const created = await SessionEntity.create(c.env, newSession);
+    return ok(c, created);
   });
-
-  app.post('/api/chats', async (c) => {
-    const { title } = (await c.req.json()) as { title?: string };
-    if (!title?.trim()) return bad(c, 'title required');
-    const created = await ChatBoardEntity.create(c.env, { id: crypto.randomUUID(), title: title.trim(), messages: [] });
-    return ok(c, { id: created.id, title: created.title });
+  // GET session stats
+  app.get('/api/sessions/stats', async (c) => {
+    const { items } = await SessionEntity.list(c.env);
+    const stats = items.reduce((acc, session) => {
+      acc[session.status] = (acc[session.status] || 0) + 1;
+      return acc;
+    }, {} as Record<SessionStatus, number>);
+    return ok(c, {
+      active: stats.active ?? 0,
+      resolved: stats.resolved ?? 0,
+      blocked: stats.blocked ?? 0,
+      archived: stats.archived ?? 0,
+    });
   });
-
-  // MESSAGES
-  app.get('/api/chats/:chatId/messages', async (c) => {
-    const chat = new ChatBoardEntity(c.env, c.req.param('chatId'));
-    if (!await chat.exists()) return notFound(c, 'chat not found');
-    return ok(c, await chat.listMessages());
+  // GET a single session by ID
+  app.get('/api/sessions/:id', async (c) => {
+    const { id } = c.req.param();
+    const session = new SessionEntity(c.env, id);
+    if (!(await session.exists())) {
+      return notFound(c, 'Session not found');
+    }
+    return ok(c, await session.getState());
   });
-
-  app.post('/api/chats/:chatId/messages', async (c) => {
-    const chatId = c.req.param('chatId');
-    const { userId, text } = (await c.req.json()) as { userId?: string; text?: string };
-    if (!isStr(userId) || !text?.trim()) return bad(c, 'userId and text required');
-    const chat = new ChatBoardEntity(c.env, chatId);
-    if (!await chat.exists()) return notFound(c, 'chat not found');
-    return ok(c, await chat.sendMessage(userId, text.trim()));
-  });
-
-  // DELETE: Users
-  app.delete('/api/users/:id', async (c) => ok(c, { id: c.req.param('id'), deleted: await UserEntity.delete(c.env, c.req.param('id')) }));
-
-  app.post('/api/users/deleteMany', async (c) => {
-    const { ids } = (await c.req.json()) as { ids?: string[] };
-    const list = ids?.filter(isStr) ?? [];
-    if (list.length === 0) return bad(c, 'ids required');
-    return ok(c, { deletedCount: await UserEntity.deleteMany(c.env, list), ids: list });
-  });
-
-  // DELETE: Chats
-  app.delete('/api/chats/:id', async (c) => ok(c, { id: c.req.param('id'), deleted: await ChatBoardEntity.delete(c.env, c.req.param('id')) }));
-
-  app.post('/api/chats/deleteMany', async (c) => {
-    const { ids } = (await c.req.json()) as { ids?: string[] };
-    const list = ids?.filter(isStr) ?? [];
-    if (list.length === 0) return bad(c, 'ids required');
-    return ok(c, { deletedCount: await ChatBoardEntity.deleteMany(c.env, list), ids: list });
+  // POST a new entry to a session
+  app.post('/api/sessions/:id/entries', zValidator('json', createEntrySchema), async (c) => {
+    const { id } = c.req.param();
+    const body = c.req.valid('json');
+    const session = new SessionEntity(c.env, id);
+    if (!(await session.exists())) {
+      return notFound(c, 'Session not found');
+    }
+    const newEntry = await session.addEntry(body);
+    return ok(c, newEntry);
   });
 }

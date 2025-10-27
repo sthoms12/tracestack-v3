@@ -3,22 +3,45 @@ export interface ApiResponse<T = unknown> {
   data?: T;
   error?: string;
 }
-
-// Minimal real-world chat example types (shared by frontend and worker)
-export interface User {
-  id: string;
-  name: string;
+export enum SessionStatus {
+  Active = 'active',
+  Resolved = 'resolved',
+  Blocked = 'blocked',
+  Archived = 'archived',
 }
-
-export interface Chat {
+export enum PriorityLevel {
+  Low = 'low',
+  Medium = 'medium',
+  High = 'high',
+  Critical = 'critical',
+}
+export enum SessionEntryType {
+  Hypothesis = 'hypothesis',
+  Action = 'action',
+  Finding = 'finding',
+  Note = 'note',
+}
+export interface SessionEntry {
+  id: string;
+  type: SessionEntryType;
+  content: string;
+  createdAt: string; // ISO 8601 string
+}
+export interface Session {
   id: string;
   title: string;
+  description: string;
+  status: SessionStatus;
+  priority: PriorityLevel;
+  environment: string;
+  tags: string[];
+  createdAt: string; // ISO 8601 string
+  updatedAt: string; // ISO 8601 string
+  entries: SessionEntry[];
 }
-
-export interface ChatMessage {
-  id: string;
-  chatId: string;
-  userId: string;
-  text: string;
-  ts: number; // epoch millis
+export interface SessionStats {
+  active: number;
+  resolved: number;
+  blocked: number;
+  archived: number;
 }
