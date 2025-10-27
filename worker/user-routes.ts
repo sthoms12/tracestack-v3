@@ -79,6 +79,10 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   });
   // --- PROTECTED ROUTES ---
   const protectedApp = new Hono<{ Bindings: Env }>();
+  protectedApp.use('*', async (c, next) => {
+    console.log(c.req.header('Authorization'));
+    await next();
+  });
   protectedApp.use('*', authMiddleware);
   // GET current user
   protectedApp.get('/api/auth/me', async (c) => {
