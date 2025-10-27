@@ -85,7 +85,8 @@ function runSetupCommands() {
     "bun add @xyflow/react",
     "rm -rf src/App.css",
     "bun add @vitejs/plugin-react-swc",
-    "bun add hono"
+    "bun add hono",
+    "bun install"
 ];
     
     if (commands.length === 0) {
