@@ -28,6 +28,16 @@ const updateBrainstormSchema = z.object({
     edges: z.array(z.any()),
   }).nullable(),
 });
+
+const updateSessionSchema = z.object({
+  title: z.string().min(3, 'Title must be at least 3 characters').optional(),
+  description: z.string().optional(),
+  environment: z.string().optional(),
+  priority: z.nativeEnum(PriorityLevel).optional(),
+  tags: z.array(z.string()).optional(),
+  status: z.nativeEnum(SessionStatus).optional(),
+});
+
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
   // Ensure seed data is present on first load
   app.use('/api/*', async (c, next) => {
@@ -57,7 +67,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       updatedAt: now,
       entries: [],
       rawNotes: "",
-      brainstormData: null,
+      brainstormData: undefined,
     };
     const created = await SessionEntity.create(c.env, newSession);
     return ok(c, created);
@@ -138,5 +148,19 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     }
     const duplicatedSession = await session.duplicate();
     return ok(c, duplicatedSession);
+  });
+
+  // PATCH update a session's properties
+  app.patch('/api/sessions/:id', zValidator('json', updateSessionSchema), async (c) => {
+    const { id } = c.req.param();
+    const body = c.req.valid('json');
+
+    const session = new SessionEntity(c.env, id);
+    if (!(await session.exists())) {
+      return notFound(c, 'Session not found');
+    }
+
+    const updatedSession = await session.update(body);
+    return ok(c, updatedSession);
   });
 }
