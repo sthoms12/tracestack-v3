@@ -4,10 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { api } from "@/lib/api-client";
 import { Session, SessionStatus, PriorityLevel } from "@shared/types";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
@@ -15,6 +15,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from "@/components/ui/skeleton";
 import CreateSessionDialog from "@/components/sessions/CreateSessionDialog";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 const statusColors: Record<SessionStatus, string> = {
   [SessionStatus.Active]: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
   [SessionStatus.Resolved]: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
@@ -30,9 +31,20 @@ const priorityColors: Record<PriorityLevel, string> = {
 export default function SessionsListPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
   const { data: sessions, isLoading } = useQuery<Session[]>({
     queryKey: ['sessions'],
     queryFn: () => api('/api/sessions')
+  });
+  const duplicateSessionMutation = useMutation({
+    mutationFn: (sessionId: string) => api<Session>(`/api/sessions/${sessionId}/duplicate`, { method: 'POST' }),
+    onSuccess: () => {
+      toast.success("Session duplicated successfully!");
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+    },
+    onError: (error) => {
+      toast.error(`Failed to duplicate session: ${error.message}`);
+    },
   });
   const filteredSessions = useMemo(() => {
     if (!sessions) return [];
@@ -115,8 +127,11 @@ export default function SessionsListPage() {
                               <DropdownMenuItem asChild>
                                 <Link to={`/app/sessions/${session.id}`}>View</Link>
                               </DropdownMenuItem>
-                              <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                              <DropdownMenuItem>Archive</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => duplicateSessionMutation.mutate(session.id)} disabled={duplicateSessionMutation.isPending}>
+                                Duplicate
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-destructive">Archive</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>

@@ -126,4 +126,14 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const updatedSession = await session.updateBrainstormData(data);
     return ok(c, updatedSession);
   });
+  // POST duplicate a session
+  app.post('/api/sessions/:id/duplicate', async (c) => {
+    const { id } = c.req.param();
+    const session = new SessionEntity(c.env, id);
+    if (!(await session.exists())) {
+      return notFound(c, 'Session not found');
+    }
+    const duplicatedSession = await session.duplicate();
+    return ok(c, duplicatedSession);
+  });
 }

@@ -4,6 +4,7 @@ import SessionKanbanView from "@/components/sessions/SessionKanbanView";
 import SessionNotesView from "@/components/sessions/SessionNotesView";
 import SessionBrainstormView from "@/components/sessions/SessionBrainstormView";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,13 +12,15 @@ import { api } from "@/lib/api-client";
 import { Session, SessionStatus, PriorityLevel } from "@shared/types";
 import { useQuery } from "@tanstack/react-query";
 import { format } from 'date-fns';
-import { Calendar, Clock, Hash, Shield, Tag } from "lucide-react";
+import { Calendar, Clock, Hash, Shield, Tag, FileText } from "lucide-react";
 import { useParams } from "react-router-dom";
+import { useState } from "react";
+import RcaReportDialog from "@/components/sessions/RcaReportDialog";
 const statusIcons: Record<SessionStatus, string> = {
   [SessionStatus.Active]: "🔵",
-  [SessionStatus.Resolved]: "��",
+  [SessionStatus.Resolved]: "🟢",
   [SessionStatus.Blocked]: "🟡",
-  [SessionStatus.Archived]: "⚪️",
+  [SessionStatus.Archived]: "⚪���",
 };
 const priorityColors: Record<PriorityLevel, string> = {
   [PriorityLevel.Low]: "text-green-500",
@@ -27,6 +30,7 @@ const priorityColors: Record<PriorityLevel, string> = {
 };
 export default function SessionDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const [isRcaDialogOpen, setRcaDialogOpen] = useState(false);
   const { data: session, isLoading, error } = useQuery<Session>({
     queryKey: ['session', id],
     queryFn: () => api(`/api/sessions/${id}`),
@@ -115,6 +119,12 @@ export default function SessionDetailPage() {
                   </div>
                 </CardContent>
               </Card>
+              <RcaReportDialog open={isRcaDialogOpen} onOpenChange={setRcaDialogOpen} session={session}>
+                <Button variant="outline" className="w-full" onClick={() => setRcaDialogOpen(true)}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Generate RCA Report
+                </Button>
+              </RcaReportDialog>
             </div>
           </div>
         </div>

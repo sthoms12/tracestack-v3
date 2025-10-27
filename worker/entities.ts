@@ -126,4 +126,17 @@ export class SessionEntity extends IndexedEntity<Session> {
       updatedAt: new Date().toISOString(),
     }));
   }
+  async duplicate(): Promise<Session> {
+    const originalState = await this.getState();
+    const now = new Date().toISOString();
+    const newSession: Session = {
+      ...originalState,
+      id: crypto.randomUUID(),
+      title: `[COPY] ${originalState.title}`,
+      createdAt: now,
+      updatedAt: now,
+      status: SessionStatus.Active,
+    };
+    return SessionEntity.create(this.env, newSession);
+  }
 }

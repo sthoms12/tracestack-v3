@@ -1,7 +1,7 @@
 import { Session } from "@shared/types";
 import { useState, useCallback, useEffect } from 'react';
-import { ReactFlow, MiniMap, Controls, Background, useNodesState, useEdgesState, addEdge, Connection, Edge, Node } from 'react-flow';
-import 'react-flow/dist/style.css';
+import { ReactFlow, MiniMap, Controls, Background, useNodesState, useEdgesState, addEdge, Connection, Edge, Node } from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { useDebounce } from "react-use";
@@ -29,8 +29,10 @@ export default function SessionBrainstormView({ session }: { session: Session })
     },
   });
   const handleSave = useCallback(() => {
-    updateBrainstormMutation.mutate({ nodes, edges });
-  }, [nodes, edges, updateBrainstormMutation]);
+    if (JSON.stringify({ nodes, edges }) !== JSON.stringify(session.brainstormData)) {
+      updateBrainstormMutation.mutate({ nodes, edges });
+    }
+  }, [nodes, edges, session.brainstormData, updateBrainstormMutation]);
   useDebounce(handleSave, 2000, [nodes, edges]);
   useEffect(() => {
     if (session.brainstormData) {
