@@ -87,16 +87,32 @@ export default function SessionKanbanView({ session }: { session: Session }) {
   });
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
-    if (over && active.id !== over.id) {
-      const activeEntry = entries.find(e => e.id === active.id);
-      if (!activeEntry) return;
-      const newContainerId = over.id as KanbanState;
-      const oldContainerId = activeEntry.kanbanState as KanbanState;
-      if (Object.values(KanbanState).includes(newContainerId) && newContainerId !== oldContainerId) {
-        // Optimistic update
-        setEntries(prev => prev.map(e => e.id === active.id ? { ...e, kanbanState: newContainerId } : e));
-        updateKanbanStateMutation.mutate({ entryId: active.id as string, newState: newContainerId });
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const activeEntry = entries.find(e => e.id === active.id);
+    if (!activeEntry) return;
+
+    const oldContainerId = activeEntry.kanbanState;
+    let newContainerId: KanbanState | undefined;
+
+    // Check if dropping directly on a column
+    if (Object.values(KanbanState).includes(over.id as KanbanState)) {
+      newContainerId = over.id as KanbanState;
+    } else {
+      // Dropping on another card, find its container
+      const overEntry = entries.find(e => e.id === over.id);
+      if (overEntry) {
+        newContainerId = overEntry.kanbanState;
       }
+    }
+
+    if (newContainerId && newContainerId !== oldContainerId) {
+      // Optimistic update
+      setEntries(prev => prev.map(e => e.id === active.id ? { ...e, kanbanState: newContainerId } : e));
+      updateKanbanStateMutation.mutate({ entryId: active.id as string, newState: newContainerId });
     }
   }
   return (
