@@ -75,15 +75,23 @@ export default function SessionKanbanView({ session }: { session: Session }) {
         method: 'PUT',
         body: JSON.stringify({ kanbanState: newState }),
       }),
+    onMutate: async ({ entryId, newState }) => {
+      await queryClient.cancelQueries({ queryKey: ['session', session.id] });
+      const previousEntries = entries;
+      setEntries(prev => prev.map(e => e.id === entryId ? { ...e, kanbanState: newState } : e));
+      return { previousEntries };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['session', session.id] });
       toast.success("Entry updated");
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
+      if (context?.previousEntries) {
+        setEntries(context.previousEntries);
+      }
       toast.error(`Failed to update entry: ${error.message}`);
-      // Revert optimistic update
-      // The state will be reverted by the useEffect that syncs with session.entries
-      // once the query invalidation completes. Removing direct setEntries call to prevent loops.
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['session', session.id] });
     },
   });
   function handleDragEnd(event: DragEndEvent) {
@@ -111,8 +119,6 @@ export default function SessionKanbanView({ session }: { session: Session }) {
     }
 
     if (newContainerId && newContainerId !== oldContainerId) {
-      // Optimistic update
-      setEntries(prev => prev.map(e => e.id === active.id ? { ...e, kanbanState: newContainerId } : e));
       updateKanbanStateMutation.mutate({ entryId: active.id as string, newState: newContainerId });
     }
   }
