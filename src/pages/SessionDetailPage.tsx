@@ -1,6 +1,8 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import SessionTimelineView from "@/components/sessions/SessionTimelineView";
 import SessionKanbanView from "@/components/sessions/SessionKanbanView";
+import SessionNotesView from "@/components/sessions/SessionNotesView";
+import SessionBrainstormView from "@/components/sessions/SessionBrainstormView";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,13 +11,13 @@ import { api } from "@/lib/api-client";
 import { Session, SessionStatus, PriorityLevel } from "@shared/types";
 import { useQuery } from "@tanstack/react-query";
 import { format } from 'date-fns';
-import { Calendar, Clock, Hash, Shield, Tag, BrainCircuit, FileText } from "lucide-react";
+import { Calendar, Clock, Hash, Shield, Tag } from "lucide-react";
 import { useParams } from "react-router-dom";
 const statusIcons: Record<SessionStatus, string> = {
   [SessionStatus.Active]: "🔵",
-  [SessionStatus.Resolved]: "🟢",
+  [SessionStatus.Resolved]: "��",
   [SessionStatus.Blocked]: "🟡",
-  [SessionStatus.Archived]: "⚪���",
+  [SessionStatus.Archived]: "⚪️",
 };
 const priorityColors: Record<PriorityLevel, string> = {
   [PriorityLevel.Low]: "text-green-500",
@@ -76,8 +78,8 @@ export default function SessionDetailPage() {
                 <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="timeline">Timeline</TabsTrigger>
                   <TabsTrigger value="kanban">Kanban</TabsTrigger>
-                  <TabsTrigger value="notes" disabled>Raw Notes</TabsTrigger>
-                  <TabsTrigger value="brainstorm" disabled>Brainstorm</TabsTrigger>
+                  <TabsTrigger value="notes">Raw Notes</TabsTrigger>
+                  <TabsTrigger value="brainstorm">Brainstorm</TabsTrigger>
                 </TabsList>
                 <TabsContent value="timeline" className="mt-6">
                   <SessionTimelineView session={session} />
@@ -86,16 +88,10 @@ export default function SessionDetailPage() {
                   <SessionKanbanView session={session} />
                 </TabsContent>
                 <TabsContent value="notes" className="mt-6">
-                  <Card className="flex flex-col items-center justify-center text-center py-20 border-2 border-dashed">
-                    <FileText className="h-12 w-12 text-muted-foreground" />
-                    <h3 className="mt-4 text-xl font-semibold">Raw Notes View Coming Soon</h3>
-                  </Card>
+                  <SessionNotesView session={session} />
                 </TabsContent>
                 <TabsContent value="brainstorm" className="mt-6">
-                  <Card className="flex flex-col items-center justify-center text-center py-20 border-2 border-dashed">
-                    <BrainCircuit className="h-12 w-12 text-muted-foreground" />
-                    <h3 className="mt-4 text-xl font-semibold">Brainstorming Canvas Coming Soon</h3>
-                  </Card>
+                  <SessionBrainstormView session={session} />
                 </TabsContent>
               </Tabs>
             </div>

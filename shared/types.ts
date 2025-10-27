@@ -44,6 +44,8 @@ export interface Session {
   createdAt: string; // ISO 8601 string
   updatedAt: string; // ISO 8601 string
   entries: SessionEntry[];
+  rawNotes?: string;
+  brainstormData?: any;
 }
 export interface SessionStats {
   active: number;

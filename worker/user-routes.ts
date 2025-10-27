@@ -19,6 +19,12 @@ const createEntrySchema = z.object({
 const updateKanbanStateSchema = z.object({
   kanbanState: z.nativeEnum(KanbanState),
 });
+const updateNotesSchema = z.object({
+  notes: z.string(),
+});
+const updateBrainstormSchema = z.object({
+  data: z.any(),
+});
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
   // Ensure seed data is present on first load
   app.use('/api/*', async (c, next) => {
@@ -47,6 +53,8 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       createdAt: now,
       updatedAt: now,
       entries: [],
+      rawNotes: "",
+      brainstormData: null,
     };
     const created = await SessionEntity.create(c.env, newSession);
     return ok(c, created);
@@ -94,6 +102,28 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       return notFound(c, 'Session not found');
     }
     const updatedSession = await session.updateEntryKanbanState(entryId, kanbanState);
+    return ok(c, updatedSession);
+  });
+  // PUT update raw notes
+  app.put('/api/sessions/:id/notes', zValidator('json', updateNotesSchema), async (c) => {
+    const { id } = c.req.param();
+    const { notes } = c.req.valid('json');
+    const session = new SessionEntity(c.env, id);
+    if (!(await session.exists())) {
+      return notFound(c, 'Session not found');
+    }
+    const updatedSession = await session.updateRawNotes(notes);
+    return ok(c, updatedSession);
+  });
+  // PUT update brainstorm data
+  app.put('/api/sessions/:id/brainstorm', zValidator('json', updateBrainstormSchema), async (c) => {
+    const { id } = c.req.param();
+    const { data } = c.req.valid('json');
+    const session = new SessionEntity(c.env, id);
+    if (!(await session.exists())) {
+      return notFound(c, 'Session not found');
+    }
+    const updatedSession = await session.updateBrainstormData(data);
     return ok(c, updatedSession);
   });
 }

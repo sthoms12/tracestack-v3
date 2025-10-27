@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, List, BarChart2, Search, Settings, LifeBuoy } from "lucide-react";
+import { Home, List, BarChart2, Search, Settings, LifeBuoy, Sparkles } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -15,6 +15,7 @@ const navItems = [
   { href: "/app/sessions", label: "All Sessions", icon: List },
   { href: "/app/analytics", label: "Analytics", icon: BarChart2 },
   { href: "/app/search", label: "Search", icon: Search },
+  { href: "/app/ai-assistant", label: "AI Assistant", icon: Sparkles },
 ];
 export function AppSidebar(): JSX.Element {
   const location = useLocation();

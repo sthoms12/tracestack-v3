@@ -20,6 +20,7 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import SearchPage from './pages/SearchPage';
 import SettingsPage from './pages/SettingsPage';
 import SupportPage from './pages/SupportPage';
+import AiAssistantPage from './pages/AiAssistantPage';
 import { Toaster } from '@/components/ui/sonner';
 const queryClient = new QueryClient();
 const router = createBrowserRouter([
@@ -55,6 +56,11 @@ const router = createBrowserRouter([
   {
     path: "/app/search",
     element: <SearchPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/app/ai-assistant",
+    element: <AiAssistantPage />,
     errorElement: <RouteErrorBoundary />,
   },
   {
