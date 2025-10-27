@@ -23,7 +23,10 @@ const updateNotesSchema = z.object({
   notes: z.string(),
 });
 const updateBrainstormSchema = z.object({
-  data: z.any(),
+  data: z.object({
+    nodes: z.array(z.any()),
+    edges: z.array(z.any()),
+  }).nullable(),
 });
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
   // Ensure seed data is present on first load
@@ -35,7 +38,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   app.get('/api/sessions', async (c) => {
     const { items } = await SessionEntity.list(c.env);
     // sort by most recently updated
-    items.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.createdAt).getTime());
+    items.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
     return ok(c, items);
   });
   // POST a new session
