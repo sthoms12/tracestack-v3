@@ -79,7 +79,8 @@ function updateWranglerJsonc() {
 function runSetupCommands() {
     const commands = [
     "bun install @hono/zod-validator",
-    "rm -rf src/pages/DemoPage.tsx"
+    "rm -rf src/pages/DemoPage.tsx",
+    "bun install react-flow"
 ];
     
     if (commands.length === 0) {
