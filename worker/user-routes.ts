@@ -82,7 +82,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   protectedApp.use('*', authMiddleware);
   // GET current user
   protectedApp.get('/api/auth/me', async (c) => {
-    const payload = await getTokenPayload(c);
+    const payload = c.get('jwtPayload');
     if (!payload?.email) {
       return notFound(c, 'User not found');
     }
@@ -94,7 +94,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   });
   // GET all sessions for the current user
   protectedApp.get('/api/sessions', async (c) => {
-    const payload = await getTokenPayload(c);
+    const payload = c.get('jwtPayload');
     if (!payload?.id) return notFound(c, 'User not found');
     const { items } = await SessionEntity.list(c.env);
     let userSessions = items.filter(s => s.userId === payload.id);
@@ -107,7 +107,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   });
   // POST a new session for the current user
   protectedApp.post('/api/sessions', zValidator('json', createSessionSchema), async (c) => {
-    const payload = await getTokenPayload(c);
+    const payload = c.get('jwtPayload');
     if (!payload?.id) return notFound(c, 'User not found');
     const body = c.req.valid('json');
     const now = new Date().toISOString();
@@ -131,7 +131,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   });
   // GET session stats for the current user
   protectedApp.get('/api/sessions/stats', async (c) => {
-    const payload = await getTokenPayload(c);
+    const payload = c.get('jwtPayload');
     if (!payload?.id) return notFound(c, 'User not found');
     const { items } = await SessionEntity.list(c.env);
     const userSessions = items.filter(s => s.userId === payload.id);
@@ -148,7 +148,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   });
   // GET a single session by ID (with ownership check)
   protectedApp.get('/api/sessions/:id', async (c) => {
-    const payload = await getTokenPayload(c);
+    const payload = c.get('jwtPayload');
     if (!payload?.id) return notFound(c, 'User not found');
     const { id } = c.req.param();
     const session = new SessionEntity(c.env, id);
@@ -163,7 +163,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   });
   // POST a new entry to a session (with ownership check)
   protectedApp.post('/api/sessions/:id/entries', zValidator('json', createEntrySchema), async (c) => {
-    const payload = await getTokenPayload(c);
+    const payload = c.get('jwtPayload');
     if (!payload?.id) return notFound(c, 'User not found');
     const { id } = c.req.param();
     const body = c.req.valid('json');
@@ -180,7 +180,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   });
   // PUT update an entry's kanban state (with ownership check)
   protectedApp.put('/api/sessions/:id/entries/:entryId/kanban', zValidator('json', updateKanbanStateSchema), async (c) => {
-    const payload = await getTokenPayload(c);
+    const payload = c.get('jwtPayload');
     if (!payload?.id) return notFound(c, 'User not found');
     const { id, entryId } = c.req.param();
     const { kanbanState } = c.req.valid('json');
@@ -197,7 +197,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   });
   // PUT update raw notes (with ownership check)
   protectedApp.put('/api/sessions/:id/notes', zValidator('json', updateNotesSchema), async (c) => {
-    const payload = await getTokenPayload(c);
+    const payload = c.get('jwtPayload');
     if (!payload?.id) return notFound(c, 'User not found');
     const { id } = c.req.param();
     const { notes } = c.req.valid('json');
@@ -214,7 +214,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   });
   // PUT update brainstorm data (with ownership check)
   protectedApp.put('/api/sessions/:id/brainstorm', zValidator('json', updateBrainstormSchema), async (c) => {
-    const payload = await getTokenPayload(c);
+    const payload = c.get('jwtPayload');
     if (!payload?.id) return notFound(c, 'User not found');
     const { id } = c.req.param();
     const { data } = c.req.valid('json');
@@ -231,7 +231,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   });
   // POST duplicate a session (with ownership check)
   protectedApp.post('/api/sessions/:id/duplicate', async (c) => {
-    const payload = await getTokenPayload(c);
+    const payload = c.get('jwtPayload');
     if (!payload?.id) return notFound(c, 'User not found');
     const { id } = c.req.param();
     const session = new SessionEntity(c.env, id);
@@ -247,7 +247,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   });
   // PATCH update a session's properties (with ownership check)
   protectedApp.patch('/api/sessions/:id', zValidator('json', updateSessionSchema), async (c) => {
-    const payload = await getTokenPayload(c);
+    const payload = c.get('jwtPayload');
     if (!payload?.id) return notFound(c, 'User not found');
     const { id } = c.req.param();
     const body = c.req.valid('json');
