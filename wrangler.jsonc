@@ -4,7 +4,7 @@
  */
  {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "tracestack-7nqk4eahhlfsca3i-c7pu",
+	"name": "tracestack-ai",
 	"main": "worker/index.ts",
 	"compatibility_date": "2025-04-24",
 	"assets": {
