@@ -82,7 +82,8 @@ export default function SessionKanbanView({ session }: { session: Session }) {
     onError: (error) => {
       toast.error(`Failed to update entry: ${error.message}`);
       // Revert optimistic update
-      setEntries(session.entries);
+      // The state will be reverted by the useEffect that syncs with session.entries
+      // once the query invalidation completes. Removing direct setEntries call to prevent loops.
     },
   });
   function handleDragEnd(event: DragEndEvent) {
