@@ -1,5 +1,5 @@
 import { IndexedEntity } from "./core-utils";
-import type { Session, SessionEntry } from "@shared/types";
+import type { Session, SessionEntry, BrainstormData } from "@shared/types";
 import { SessionStatus, PriorityLevel, SessionEntryType, KanbanState } from "@shared/types";
 const SEED_SESSIONS: Session[] = [
   {
@@ -119,7 +119,7 @@ export class SessionEntity extends IndexedEntity<Session> {
       updatedAt: new Date().toISOString(),
     }));
   }
-  async updateBrainstormData(data: any): Promise<Session> {
+  async updateBrainstormData(data: BrainstormData | null): Promise<Session> {
     return this.mutate(s => ({
       ...s,
       brainstormData: data,
