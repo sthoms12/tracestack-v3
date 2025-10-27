@@ -56,6 +56,7 @@ export interface BrainstormData {
 }
 export interface Session {
   id: string;
+  userId: string;
   title: string;
   description: string;
   status: SessionStatus;

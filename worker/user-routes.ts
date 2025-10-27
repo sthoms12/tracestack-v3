@@ -92,23 +92,28 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     }
     return ok(c, await user.toJSON());
   });
-  // Ensure seed data is present on first load
-  protectedApp.use('/api/sessions/*', async (c, next) => {
-    await SessionEntity.ensureSeed(c.env);
-    await next();
-  });
-  // GET all sessions
+  // GET all sessions for the current user
   protectedApp.get('/api/sessions', async (c) => {
+    const payload = await getTokenPayload(c);
+    if (!payload?.id) return notFound(c, 'User not found');
     const { items } = await SessionEntity.list(c.env);
-    items.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-    return ok(c, items);
+    let userSessions = items.filter(s => s.userId === payload.id);
+    if (userSessions.length === 0) {
+      // First time user, create seed data for them
+      userSessions = await SessionEntity.seedForUser(c.env, payload.id);
+    }
+    userSessions.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    return ok(c, userSessions);
   });
-  // POST a new session
+  // POST a new session for the current user
   protectedApp.post('/api/sessions', zValidator('json', createSessionSchema), async (c) => {
+    const payload = await getTokenPayload(c);
+    if (!payload?.id) return notFound(c, 'User not found');
     const body = c.req.valid('json');
     const now = new Date().toISOString();
     const newSession: Session = {
       id: crypto.randomUUID(),
+      userId: payload.id,
       title: body.title,
       description: body.description ?? '',
       environment: body.environment ?? '',
@@ -124,10 +129,13 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const created = await SessionEntity.create(c.env, newSession);
     return ok(c, created);
   });
-  // GET session stats
+  // GET session stats for the current user
   protectedApp.get('/api/sessions/stats', async (c) => {
+    const payload = await getTokenPayload(c);
+    if (!payload?.id) return notFound(c, 'User not found');
     const { items } = await SessionEntity.list(c.env);
-    const stats = items.reduce((acc, session) => {
+    const userSessions = items.filter(s => s.userId === payload.id);
+    const stats = userSessions.reduce((acc, session) => {
       acc[session.status] = (acc[session.status] || 0) + 1;
       return acc;
     }, {} as Record<SessionStatus, number>);
@@ -138,75 +146,117 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       archived: stats.archived ?? 0,
     });
   });
-  // GET a single session by ID
+  // GET a single session by ID (with ownership check)
   protectedApp.get('/api/sessions/:id', async (c) => {
+    const payload = await getTokenPayload(c);
+    if (!payload?.id) return notFound(c, 'User not found');
     const { id } = c.req.param();
     const session = new SessionEntity(c.env, id);
     if (!(await session.exists())) {
       return notFound(c, 'Session not found');
     }
-    return ok(c, await session.getState());
+    const sessionState = await session.getState();
+    if (sessionState.userId !== payload.id) {
+      return notFound(c, 'Session not found');
+    }
+    return ok(c, sessionState);
   });
-  // POST a new entry to a session
+  // POST a new entry to a session (with ownership check)
   protectedApp.post('/api/sessions/:id/entries', zValidator('json', createEntrySchema), async (c) => {
+    const payload = await getTokenPayload(c);
+    if (!payload?.id) return notFound(c, 'User not found');
     const { id } = c.req.param();
     const body = c.req.valid('json');
     const session = new SessionEntity(c.env, id);
     if (!(await session.exists())) {
       return notFound(c, 'Session not found');
     }
+    const sessionState = await session.getState();
+    if (sessionState.userId !== payload.id) {
+      return notFound(c, 'Session not found');
+    }
     const newEntry = await session.addEntry(body);
     return ok(c, newEntry);
   });
-  // PUT update an entry's kanban state
+  // PUT update an entry's kanban state (with ownership check)
   protectedApp.put('/api/sessions/:id/entries/:entryId/kanban', zValidator('json', updateKanbanStateSchema), async (c) => {
+    const payload = await getTokenPayload(c);
+    if (!payload?.id) return notFound(c, 'User not found');
     const { id, entryId } = c.req.param();
     const { kanbanState } = c.req.valid('json');
     const session = new SessionEntity(c.env, id);
     if (!(await session.exists())) {
       return notFound(c, 'Session not found');
     }
+    const sessionState = await session.getState();
+    if (sessionState.userId !== payload.id) {
+      return notFound(c, 'Session not found');
+    }
     const updatedSession = await session.updateEntryKanbanState(entryId, kanbanState);
     return ok(c, updatedSession);
   });
-  // PUT update raw notes
+  // PUT update raw notes (with ownership check)
   protectedApp.put('/api/sessions/:id/notes', zValidator('json', updateNotesSchema), async (c) => {
+    const payload = await getTokenPayload(c);
+    if (!payload?.id) return notFound(c, 'User not found');
     const { id } = c.req.param();
     const { notes } = c.req.valid('json');
     const session = new SessionEntity(c.env, id);
     if (!(await session.exists())) {
       return notFound(c, 'Session not found');
     }
+    const sessionState = await session.getState();
+    if (sessionState.userId !== payload.id) {
+      return notFound(c, 'Session not found');
+    }
     const updatedSession = await session.updateRawNotes(notes);
     return ok(c, updatedSession);
   });
-  // PUT update brainstorm data
+  // PUT update brainstorm data (with ownership check)
   protectedApp.put('/api/sessions/:id/brainstorm', zValidator('json', updateBrainstormSchema), async (c) => {
+    const payload = await getTokenPayload(c);
+    if (!payload?.id) return notFound(c, 'User not found');
     const { id } = c.req.param();
     const { data } = c.req.valid('json');
     const session = new SessionEntity(c.env, id);
     if (!(await session.exists())) {
       return notFound(c, 'Session not found');
     }
+    const sessionState = await session.getState();
+    if (sessionState.userId !== payload.id) {
+      return notFound(c, 'Session not found');
+    }
     const updatedSession = await session.updateBrainstormData(data);
     return ok(c, updatedSession);
   });
-  // POST duplicate a session
+  // POST duplicate a session (with ownership check)
   protectedApp.post('/api/sessions/:id/duplicate', async (c) => {
+    const payload = await getTokenPayload(c);
+    if (!payload?.id) return notFound(c, 'User not found');
     const { id } = c.req.param();
     const session = new SessionEntity(c.env, id);
     if (!(await session.exists())) {
       return notFound(c, 'Session not found');
     }
+    const sessionState = await session.getState();
+    if (sessionState.userId !== payload.id) {
+      return notFound(c, 'Session not found');
+    }
     const duplicatedSession = await session.duplicate();
     return ok(c, duplicatedSession);
   });
-  // PATCH update a session's properties
+  // PATCH update a session's properties (with ownership check)
   protectedApp.patch('/api/sessions/:id', zValidator('json', updateSessionSchema), async (c) => {
+    const payload = await getTokenPayload(c);
+    if (!payload?.id) return notFound(c, 'User not found');
     const { id } = c.req.param();
     const body = c.req.valid('json');
     const session = new SessionEntity(c.env, id);
     if (!(await session.exists())) {
+      return notFound(c, 'Session not found');
+    }
+    const sessionState = await session.getState();
+    if (sessionState.userId !== payload.id) {
       return notFound(c, 'Session not found');
     }
     const updatedSession = await session.update(body);

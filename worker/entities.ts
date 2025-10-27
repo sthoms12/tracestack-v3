@@ -1,6 +1,7 @@
 import { IndexedEntity } from "./core-utils";
 import type { Session, SessionEntry, BrainstormData, User } from "@shared/types";
 import { SessionStatus, PriorityLevel, SessionEntryType, KanbanState } from "@shared/types";
+import type { Env } from './core-utils';
 // --- USER ENTITY ---
 interface UserState extends User {
   hashedPassword: string;
@@ -13,7 +14,7 @@ export class UserEntity extends IndexedEntity<UserState> {
     email: "",
     hashedPassword: "",
   };
-  static keyOf(state: UserState): string {
+  static keyOf(state: any): string {
     return state.email.toLowerCase();
   }
   static async hashPassword(password: string): Promise<string> {
@@ -36,9 +37,9 @@ export class UserEntity extends IndexedEntity<UserState> {
   }
 }
 // --- SESSION ENTITY ---
-const SEED_SESSIONS: Session[] = [
+const getSeedSessionsForUser = (userId: string): Omit<Session, 'id'>[] => [
   {
-    id: 'seed-1',
+    userId,
     title: 'API Gateway returning 502 Bad Gateway',
     description: 'The primary API gateway is intermittently failing with 502 errors, impacting all downstream services. Started around 9:15 AM.',
     status: SessionStatus.Active,
@@ -56,7 +57,7 @@ const SEED_SESSIONS: Session[] = [
     brainstormData: undefined,
   },
   {
-    id: 'seed-2',
+    userId,
     title: 'User profile pictures not loading on mobile',
     description: 'Users on iOS and Android are reporting that profile pictures are not displaying. Web app is unaffected.',
     status: SessionStatus.Active,
@@ -77,6 +78,7 @@ export class SessionEntity extends IndexedEntity<Session> {
   static readonly indexName = "sessions";
   static readonly initialState: Session = {
     id: "",
+    userId: "",
     title: "",
     description: "",
     status: SessionStatus.Active,
@@ -89,7 +91,19 @@ export class SessionEntity extends IndexedEntity<Session> {
     rawNotes: "",
     brainstormData: undefined,
   };
-  static seedData = SEED_SESSIONS;
+  static async seedForUser(env: Env, userId: string): Promise<Session[]> {
+    const seedData = getSeedSessionsForUser(userId);
+    const createdSessions: Session[] = [];
+    for (const sessionData of seedData) {
+      const newSession: Session = {
+        ...sessionData,
+        id: crypto.randomUUID(),
+      };
+      await SessionEntity.create(env, newSession);
+      createdSessions.push(newSession);
+    }
+    return createdSessions;
+  }
   async addEntry(entry: Omit<SessionEntry, 'id' | 'createdAt'>): Promise<SessionEntry> {
     const newEntry: SessionEntry = {
       ...entry,
