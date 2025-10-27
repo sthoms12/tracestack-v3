@@ -3,6 +3,7 @@ import SessionTimelineView from "@/components/sessions/SessionTimelineView";
 import SessionKanbanView from "@/components/sessions/SessionKanbanView";
 import SessionNotesView from "@/components/sessions/SessionNotesView";
 import SessionBrainstormView from "@/components/sessions/SessionBrainstormView";
+import SessionUnifiedView from "@/components/sessions/SessionUnifiedView";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +21,7 @@ const statusIcons: Record<SessionStatus, string> = {
   [SessionStatus.Active]: "🔵",
   [SessionStatus.Resolved]: "🟢",
   [SessionStatus.Blocked]: "🟡",
-  [SessionStatus.Archived]: "⚪️",
+  [SessionStatus.Archived]: "���️",
 };
 const priorityColors: Record<PriorityLevel, string> = {
   [PriorityLevel.Low]: "text-green-500",
@@ -79,11 +80,12 @@ export default function SessionDetailPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
             <div className="lg:col-span-2">
               <Tabs defaultValue="timeline" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="timeline">Timeline</TabsTrigger>
                   <TabsTrigger value="kanban">Kanban</TabsTrigger>
                   <TabsTrigger value="notes">Raw Notes</TabsTrigger>
                   <TabsTrigger value="brainstorm">Brainstorm</TabsTrigger>
+                  <TabsTrigger value="unified">Unified</TabsTrigger>
                 </TabsList>
                 <TabsContent value="timeline" className="mt-6">
                   <SessionTimelineView session={session} />
@@ -96,6 +98,9 @@ export default function SessionDetailPage() {
                 </TabsContent>
                 <TabsContent value="brainstorm" className="mt-6">
                   <SessionBrainstormView session={session} />
+                </TabsContent>
+                <TabsContent value="unified" className="mt-6">
+                  <SessionUnifiedView session={session} />
                 </TabsContent>
               </Tabs>
             </div>
