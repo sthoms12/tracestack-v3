@@ -33,6 +33,25 @@ export interface SessionEntry {
   createdAt: string; // ISO 8601 string
   kanbanState?: KanbanState;
 }
+
+export interface BrainstormNode {
+  id: string;
+  position: { x: number; y: number };
+  data: { label: string };
+  type?: string;
+}
+
+export interface BrainstormEdge {
+  id: string;
+  source: string;
+  target: string;
+}
+
+export interface BrainstormData {
+  nodes: BrainstormNode[];
+  edges: BrainstormEdge[];
+}
+
 export interface Session {
   id: string;
   title: string;
@@ -45,7 +64,7 @@ export interface Session {
   updatedAt: string; // ISO 8601 string
   entries: SessionEntry[];
   rawNotes?: string;
-  brainstormData?: any;
+  brainstormData?: BrainstormData;
 }
 export interface SessionStats {
   active: number;
