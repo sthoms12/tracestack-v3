@@ -1,6 +1,41 @@
 import { IndexedEntity } from "./core-utils";
-import type { Session, SessionEntry, BrainstormData } from "@shared/types";
+import type { Session, SessionEntry, BrainstormData, User } from "@shared/types";
 import { SessionStatus, PriorityLevel, SessionEntryType, KanbanState } from "@shared/types";
+// --- USER ENTITY ---
+interface UserState extends User {
+  hashedPassword: string;
+}
+export class UserEntity extends IndexedEntity<UserState> {
+  static readonly entityName = "user";
+  static readonly indexName = "users_by_email";
+  static readonly initialState: UserState = {
+    id: "",
+    email: "",
+    hashedPassword: "",
+  };
+  static keyOf(state: UserState): string {
+    return state.email.toLowerCase();
+  }
+  static async hashPassword(password: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  static async verifyPassword(password: string, hash: string): Promise<boolean> {
+    const hashedPassword = await UserEntity.hashPassword(password);
+    return hashedPassword === hash;
+  }
+  async toJSON(): Promise<User> {
+    const state = await this.getState();
+    return {
+      id: state.id,
+      email: state.email,
+    };
+  }
+}
+// --- SESSION ENTITY ---
 const SEED_SESSIONS: Session[] = [
   {
     id: 'seed-1',
@@ -33,34 +68,6 @@ const SEED_SESSIONS: Session[] = [
     entries: [
       { id: 'e2-1', type: SessionEntryType.Hypothesis, content: 'Investigate CDN configuration for mobile user agents.', createdAt: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString(), kanbanState: KanbanState.Todo },
     ],
-    rawNotes: "",
-    brainstormData: undefined,
-  },
-  {
-    id: 'seed-3',
-    title: 'Database CPU utilization at 100%',
-    description: 'The main PostgreSQL instance has pinned CPU at 100% for the last 30 minutes.',
-    status: SessionStatus.Resolved,
-    priority: PriorityLevel.Critical,
-    environment: 'Production',
-    tags: ['database', 'performance', 'postgres'],
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString(),
-    entries: [],
-    rawNotes: "",
-    brainstormData: undefined,
-  },
-  {
-    id: 'seed-4',
-    title: 'CI/CD pipeline failing on `npm install`',
-    description: 'The build pipeline is blocked due to a dependency resolution issue in the `npm install` step.',
-    status: SessionStatus.Blocked,
-    priority: PriorityLevel.Medium,
-    environment: 'Staging',
-    tags: ['ci-cd', 'dependencies'],
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    entries: [],
     rawNotes: "",
     brainstormData: undefined,
   },

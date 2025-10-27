@@ -3,9 +3,12 @@ export interface ApiResponse<T = unknown> {
   data?: T;
   error?: string;
 }
-export interface AuthUser {
+export interface User {
+  id: string;
   email: string;
 }
+// This was previously for Cloudflare Access, now it represents the JWT payload/user object.
+export type AuthUser = User;
 export enum SessionStatus {
   Active = 'active',
   Resolved = 'resolved',

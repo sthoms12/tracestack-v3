@@ -2,22 +2,19 @@ import { Hono } from "hono";
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import type { Env } from './core-utils';
-import { SessionEntity } from "./entities";
+import { SessionEntity, UserEntity } from "./entities";
 import { ok, bad, notFound } from './core-utils';
-import { SessionStatus, PriorityLevel, SessionEntryType, type Session, KanbanState, AuthUser } from "@shared/types";
-// Helper to decode JWT payload. NOTE: This does NOT verify the signature.
-// Cloudflare Access has already verified it before the request reaches the worker.
-function decodeJwtPayload(token: string): { email?: string } | null {
-  try {
-    const payload = token.split('.')[1];
-    if (!payload) return null;
-    const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
-    return JSON.parse(decoded);
-  } catch (e) {
-    console.error('Failed to decode JWT payload:', e);
-    return null;
-  }
-}
+import { SessionStatus, PriorityLevel, SessionEntryType, type Session, KanbanState, type User } from "@shared/types";
+import { authMiddleware, getTokenPayload, signToken } from "./auth";
+// --- ZOD SCHEMAS ---
+const registerSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+});
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string(),
+});
 const createSessionSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
   description: z.string().optional(),
@@ -50,33 +47,64 @@ const updateSessionSchema = z.object({
   status: z.nativeEnum(SessionStatus).optional(),
 });
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
-  // Authentication endpoint
-  app.get('/api/auth/me', (c) => {
-    const jwt = c.req.header('Cf-Access-Jwt-Assertion');
-    if (jwt) {
-      const payload = decodeJwtPayload(jwt);
-      if (payload?.email) {
-        return ok(c, { email: payload.email } as AuthUser);
-      }
+  // --- PUBLIC AUTH ROUTES ---
+  app.post('/api/auth/register', zValidator('json', registerSchema), async (c) => {
+    const { email, password } = c.req.valid('json');
+    const user = new UserEntity(c.env, email.toLowerCase());
+    if (await user.exists()) {
+      return bad(c, 'User with this email already exists');
     }
-    // For local development, return a mock user when the header is not present.
-    // This condition can be tightened for production builds if needed.
-    return ok(c, { email: 'dev.user@tracestack.local' } as AuthUser);
+    const hashedPassword = await UserEntity.hashPassword(password);
+    const newUser = await UserEntity.create(c.env, {
+      id: crypto.randomUUID(),
+      email: email.toLowerCase(),
+      hashedPassword,
+    });
+    return ok(c, { id: newUser.id, email: newUser.email } as User);
+  });
+  app.post('/api/auth/login', zValidator('json', loginSchema), async (c) => {
+    const { email, password } = c.req.valid('json');
+    const user = new UserEntity(c.env, email.toLowerCase());
+    if (!(await user.exists())) {
+      return bad(c, 'Invalid email or password');
+    }
+    const { hashedPassword } = await user.getState();
+    const isPasswordValid = await UserEntity.verifyPassword(password, hashedPassword);
+    if (!isPasswordValid) {
+      return bad(c, 'Invalid email or password');
+    }
+    const userJSON = await user.toJSON();
+    const token = await signToken(userJSON);
+    return ok(c, { user: userJSON, token });
+  });
+  // --- PROTECTED ROUTES ---
+  const protectedApp = new Hono<{ Bindings: Env }>();
+  protectedApp.use('*', authMiddleware);
+  // GET current user
+  protectedApp.get('/api/auth/me', async (c) => {
+    const payload = await getTokenPayload(c);
+    if (!payload?.email) {
+      return notFound(c, 'User not found');
+    }
+    const user = new UserEntity(c.env, payload.email);
+    if (!(await user.exists())) {
+      return notFound(c, 'User not found');
+    }
+    return ok(c, await user.toJSON());
   });
   // Ensure seed data is present on first load
-  app.use('/api/*', async (c, next) => {
+  protectedApp.use('/api/sessions/*', async (c, next) => {
     await SessionEntity.ensureSeed(c.env);
     await next();
   });
   // GET all sessions
-  app.get('/api/sessions', async (c) => {
+  protectedApp.get('/api/sessions', async (c) => {
     const { items } = await SessionEntity.list(c.env);
-    // sort by most recently updated
     items.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
     return ok(c, items);
   });
   // POST a new session
-  app.post('/api/sessions', zValidator('json', createSessionSchema), async (c) => {
+  protectedApp.post('/api/sessions', zValidator('json', createSessionSchema), async (c) => {
     const body = c.req.valid('json');
     const now = new Date().toISOString();
     const newSession: Session = {
@@ -97,7 +125,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     return ok(c, created);
   });
   // GET session stats
-  app.get('/api/sessions/stats', async (c) => {
+  protectedApp.get('/api/sessions/stats', async (c) => {
     const { items } = await SessionEntity.list(c.env);
     const stats = items.reduce((acc, session) => {
       acc[session.status] = (acc[session.status] || 0) + 1;
@@ -111,7 +139,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     });
   });
   // GET a single session by ID
-  app.get('/api/sessions/:id', async (c) => {
+  protectedApp.get('/api/sessions/:id', async (c) => {
     const { id } = c.req.param();
     const session = new SessionEntity(c.env, id);
     if (!(await session.exists())) {
@@ -120,7 +148,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     return ok(c, await session.getState());
   });
   // POST a new entry to a session
-  app.post('/api/sessions/:id/entries', zValidator('json', createEntrySchema), async (c) => {
+  protectedApp.post('/api/sessions/:id/entries', zValidator('json', createEntrySchema), async (c) => {
     const { id } = c.req.param();
     const body = c.req.valid('json');
     const session = new SessionEntity(c.env, id);
@@ -131,7 +159,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     return ok(c, newEntry);
   });
   // PUT update an entry's kanban state
-  app.put('/api/sessions/:id/entries/:entryId/kanban', zValidator('json', updateKanbanStateSchema), async (c) => {
+  protectedApp.put('/api/sessions/:id/entries/:entryId/kanban', zValidator('json', updateKanbanStateSchema), async (c) => {
     const { id, entryId } = c.req.param();
     const { kanbanState } = c.req.valid('json');
     const session = new SessionEntity(c.env, id);
@@ -142,7 +170,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     return ok(c, updatedSession);
   });
   // PUT update raw notes
-  app.put('/api/sessions/:id/notes', zValidator('json', updateNotesSchema), async (c) => {
+  protectedApp.put('/api/sessions/:id/notes', zValidator('json', updateNotesSchema), async (c) => {
     const { id } = c.req.param();
     const { notes } = c.req.valid('json');
     const session = new SessionEntity(c.env, id);
@@ -153,7 +181,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     return ok(c, updatedSession);
   });
   // PUT update brainstorm data
-  app.put('/api/sessions/:id/brainstorm', zValidator('json', updateBrainstormSchema), async (c) => {
+  protectedApp.put('/api/sessions/:id/brainstorm', zValidator('json', updateBrainstormSchema), async (c) => {
     const { id } = c.req.param();
     const { data } = c.req.valid('json');
     const session = new SessionEntity(c.env, id);
@@ -164,7 +192,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     return ok(c, updatedSession);
   });
   // POST duplicate a session
-  app.post('/api/sessions/:id/duplicate', async (c) => {
+  protectedApp.post('/api/sessions/:id/duplicate', async (c) => {
     const { id } = c.req.param();
     const session = new SessionEntity(c.env, id);
     if (!(await session.exists())) {
@@ -174,7 +202,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     return ok(c, duplicatedSession);
   });
   // PATCH update a session's properties
-  app.patch('/api/sessions/:id', zValidator('json', updateSessionSchema), async (c) => {
+  protectedApp.patch('/api/sessions/:id', zValidator('json', updateSessionSchema), async (c) => {
     const { id } = c.req.param();
     const body = c.req.valid('json');
     const session = new SessionEntity(c.env, id);
@@ -184,4 +212,5 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const updatedSession = await session.update(body);
     return ok(c, updatedSession);
   });
+  app.route('/', protectedApp);
 }

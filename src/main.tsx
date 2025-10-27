@@ -14,6 +14,8 @@ import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
 import '@/index.css'
 import { HomePage } from '@/pages/HomePage'
 import LandingPage from '@/pages/LandingPage';
+import LoginPage from '@/pages/LoginPage';
+import RegisterPage from '@/pages/RegisterPage';
 import SessionsListPage from './pages/SessionsListPage';
 import SessionDetailPage from './pages/SessionDetailPage';
 import AnalyticsPage from './pages/AnalyticsPage';
@@ -28,6 +30,16 @@ const router = createBrowserRouter([
   {
     path: "/",
     element: <LandingPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/login",
+    element: <LoginPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/register",
+    element: <RegisterPage />,
     errorElement: <RouteErrorBoundary />,
   },
   {

@@ -29,8 +29,13 @@ export default function LandingPage() {
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <Button asChild size="lg" className="group transition-all duration-300 ease-in-out hover:shadow-lg hover:shadow-primary/20">
-                <Link to="/app/dashboard">
-                  Enter App <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
+                <Link to="/login">
+                  Get Started <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
+                </Link>
+              </Button>
+               <Button asChild size="lg" variant="outline">
+                <Link to="/register">
+                  Sign Up
                 </Link>
               </Button>
             </div>
@@ -46,7 +51,7 @@ export default function LandingPage() {
           </div>
         </div>
         <footer className="text-center py-16 text-muted-foreground text-sm">
-          Built with ❤️ at Cloudflare
+          Built with ���️ at Cloudflare
         </footer>
       </div>
     </div>
