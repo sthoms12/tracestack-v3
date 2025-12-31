@@ -1,6 +1,6 @@
 # tracestack
 A troubleshooting session management application for solo developers to organize and resolve technical issues with structured, multi-view workflows.
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/sthoms12/tracestack-v3)
 TraceStack is a specialized troubleshooting session management application designed for solo developers. It provides a structured environment to systematically track, organize, and resolve technical issues. The core principle is to transform chaotic debugging into a productive, documented process. It features multiple, distinct workflow views for each session—Timeline for chronological events, Kanban for task-based progress, Raw Notes for unstructured thoughts, and a Brainstorming canvas for visual mapping. This adaptability caters to different cognitive styles of problem-solving. By capturing every step, hypothesis, and discovery, TraceStack builds a searchable knowledge base, making past solutions easily accessible and preventing developers from solving the same problem twice. It aims to be an indispensable tool that brings clarity, order, and efficiency to the often-frustrating art of debugging.
 ## Key Features
 -   **Structured Session Management**: Create, track, and manage troubleshooting sessions from start to finish.
